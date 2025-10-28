@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="pageTitle">게시글 - Nova Estudio Creative Blog</title>
+    <meta
+      name="description"
+      content="개발과 창작에 대한 생각을 공유하는 블로그입니다."
+    />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/prism.css" />
+
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>"
+    />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container">
+        <h1 class="logo">
+          <a href="/">Nova Estudio Creative</a>
+        </h1>
+        <nav class="nav">
+          <a href="/" class="nav-link">← 목록으로</a>
+          <button class="theme-toggle" id="themeToggle" aria-label="테마 변경">
+            <span class="theme-icon">🌙</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="container">
+        <!-- 게시글 메타 정보 -->
+        <article class="post" id="postContainer">
+          <header class="post-header">
+            <h1 class="post-title" id="postTitle">게시글을 불러오는 중...</h1>
+            <div class="post-meta" id="postMeta">
+              <div class="post-date" id="postDate"></div>
+              <div class="post-tags" id="postTags"></div>
+              <div class="post-category" id="postCategory"></div>
+            </div>
+          </header>
+
+          <div class="post-content" id="postContent">
+            <div class="loading">
+              <div class="spinner"></div>
+              <p>게시글을 불러오는 중...</p>
+            </div>
+          </div>
+
+          <footer class="post-footer">
+            <div class="post-navigation">
+              <a href="/" class="back-to-list">← 목록으로 돌아가기</a>
+            </div>
+          </footer>
+        </article>
+
+        <!-- Giscus 댓글 섹션 -->
+        <section class="comments-section" id="commentsSection">
+          <h2>댓글</h2>
+          <div id="giscus-comments">
+            <!-- Giscus 댓글이 여기에 로드됩니다 -->
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>&copy; 2025 Nova Estudio Creative. All rights reserved.</p>
+        <p>Powered by GitHub Pages</p>
+      </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <script src="js/theme.js"></script>
+    <script src="js/post-loader.js"></script>
+  </body>
+</html>

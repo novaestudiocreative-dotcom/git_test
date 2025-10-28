@@ -1,0 +1,164 @@
+name: Generate Posts and Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pages/**"
+      - "index.html"
+      - "post.html"
+      - "css/**"
+      - "js/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  generate-posts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Generate posts.json
+        run: |
+          echo "📝 게시글 메타데이터 생성 시작..."
+
+          # posts.json 초기화
+          echo "[]" > posts.json
+
+          # pages 디렉토리가 존재하는지 확인
+          if [ ! -d "pages" ]; then
+            echo "⚠️ pages 디렉토리가 없습니다. 빈 posts.json을 생성합니다."
+            exit 0
+          fi
+
+          # Node.js 스크립트로 posts.json 생성
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+
+          console.log('📁 pages 디렉토리 스캔 중...');
+
+          const pagesDir = './pages';
+          const posts = [];
+
+          try {
+            const files = fs.readdirSync(pagesDir).filter(file => file.endsWith('.md'));
+            console.log(\`📄 발견된 마크다운 파일: \${files.length}개\`);
+            
+            files.forEach((file, index) => {
+              try {
+                const filePath = path.join(pagesDir, file);
+                const content = fs.readFileSync(filePath, 'utf8');
+                
+                // Front Matter 파싱
+                const frontMatterRegex = /^---\\s*\\n([\\s\\S]*?)\\n---\\s*\\n([\\s\\S]*)$/;
+                const match = content.match(frontMatterRegex);
+                
+                let frontMatter = {};
+                let slug = '';
+                
+                if (match) {
+                  const frontMatterText = match[1];
+                  const lines = frontMatterText.split('\\n');
+                  
+                  for (const line of lines) {
+                    const colonIndex = line.indexOf(':');
+                    if (colonIndex === -1) continue;
+                    
+                    const key = line.substring(0, colonIndex).trim();
+                    let value = line.substring(colonIndex + 1).trim();
+                    
+                    // 따옴표 제거
+                    if ((value.startsWith('\"') && value.endsWith('\"')) ||
+                        (value.startsWith(\"'\") && value.endsWith(\"'\"))) {
+                      value = value.slice(1, -1);
+                    }
+                    
+                    // 배열 파싱
+                    if (value.startsWith('[') && value.endsWith(']')) {
+                      value = value.slice(1, -1)
+                        .split(',')
+                        .map(item => item.trim().replace(/['\"]/g, ''))
+                        .filter(item => item);
+                    }
+                    
+                    frontMatter[key] = value;
+                  }
+                }
+                
+                // slug 생성 (파일명에서 확장자 제거)
+                slug = file.replace(/\\.md$/, '');
+                
+                // 기본값 설정
+                const post = {
+                  slug: slug,
+                  file: file,
+                  title: frontMatter.title || '제목 없음',
+                  date: frontMatter.date || new Date().toISOString().split('T')[0],
+                  tags: frontMatter.tags || [],
+                  category: frontMatter.category || '기타',
+                  description: frontMatter.description || '',
+                  order: index
+                };
+                
+                posts.push(post);
+                console.log(\`✅ \${file} 처리 완료: \${post.title}\`);
+                
+              } catch (error) {
+                console.error(\`❌ \${file} 처리 실패:\`, error.message);
+              }
+            });
+            
+            // 날짜순으로 정렬 (최신순)
+            posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // posts.json 저장
+            fs.writeFileSync('posts.json', JSON.stringify(posts, null, 2));
+            console.log(\`📝 posts.json 생성 완료: \${posts.length}개 게시글\`);
+            
+          } catch (error) {
+            console.error('❌ posts.json 생성 실패:', error.message);
+            process.exit(1);
+          }
+          "
+
+      - name: Commit posts.json
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add posts.json
+          git diff --staged --quiet || git commit -m "🤖 Auto-generate posts.json [skip ci]"
+          git push
+
+  deploy:
+    needs: generate-posts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
